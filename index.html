@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alpha Architect | Quant Research Prep & AI Workspace</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9;
+            color: #1c1917;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f5f5f4; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 10px; }
+
+        .chart-wrapper-radar {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            max-height: 350px;
+            margin: 0 auto;
+        }
+        
+        .chart-wrapper-line {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        .nav-item {
+            transition: all 0.2s ease;
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: #e7e5e4;
+            color: #ea580c;
+            font-weight: 600;
+        }
+        
+        .task-checkbox:checked + span {
+            text-decoration: line-through;
+            color: #a8a29e;
+        }
+
+        .custom-input {
+            transition: border-color 0.2s;
+            font-size: 16px; /* Prevents iOS zoom on focus */
+        }
+        .custom-input:focus {
+            outline: none;
+            border-color: #ea580c;
+            box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.1);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-loading {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            .main-content-padding { padding: 1rem; }
+            textarea { font-size: 16px !important; }
+        }
+    </style>
+
+    <!-- Chosen Palette: Warm Neutrals (Stone) with Burnt Orange Accents -->
+    <!-- Application Structure Plan: 
+         - Deployable SPA optimized for GitHub Pages and iOS "Add to Home Screen".
+         - Data Persistence: Uses localStorage for permanent on-device storage.
+         - Logic: Combined Phase 4 (Finance), Checkpoint Tool, and Gemini AI Workspace.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-white border-b border-stone-200 p-4 flex justify-between items-center z-20 shrink-0">
+        <div class="font-bold text-lg text-stone-800"><i class="fa-solid fa-chart-line text-orange-600 mr-2"></i>Alpha Prep</div>
+        <button id="mobile-menu-btn" class="text-stone-600 focus:outline-none p-2">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Nav Overlay -->
+    <div id="mobile-nav" class="fixed inset-0 bg-stone-900 bg-opacity-50 z-30 hidden" onclick="toggleMobileNav()">
+        <div class="bg-white w-72 h-full p-6 shadow-xl transform transition-transform duration-300 -translate-x-full" id="mobile-nav-content" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-8">
+                <div class="text-xl font-bold text-stone-800">Menu</div>
+                <button onclick="toggleMobileNav()"><i class="fa-solid fa-xmark text-xl text-stone-400"></i></button>
+            </div>
+            <nav class="space-y-2 overflow-y-auto max-h-[calc(100vh-200px)]" id="mobile-nav-list"></nav>
+        </div>
+    </div>
+
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-stone-200 h-full shadow-sm z-10 shrink-0">
+        <div class="p-6 border-b border-stone-100">
+            <h1 class="text-xl font-bold text-stone-800 flex items-center">
+                <i class="fa-solid fa-chart-line text-orange-600 mr-3"></i>
+                Alpha Prep
+            </h1>
+            <p class="text-xs text-stone-500 mt-2">Quant Research Roadmap</p>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1" id="desktop-nav-list">
+            <!-- Nav Items Generated via JS -->
+        </nav>
+
+        <div class="p-4 border-t border-stone-100 bg-stone-50">
+            <div class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">My Progress</div>
+            <div class="w-full bg-stone-200 rounded-full h-2.5">
+                <div id="global-progress" class="bg-orange-600 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-stone-500 mt-2">
+                <span>Phase Progress</span>
+                <span><span id="progress-text">0</span>%</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative bg-stone-50 p-4 md:p-8" id="main-content">
+        <!-- Dynamic Content Injected Here -->
+    </main>
+
+    <!-- Modal for AI Interaction -->
+    <div id="ai-modal" class="fixed inset-0 bg-stone-900 bg-opacity-70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+                <h3 id="modal-title" class="text-xl font-bold text-stone-800 flex items-center italic">
+                    ✨ AI Assistant
+                </h3>
+                <button onclick="closeModal()" class="text-stone-400 hover:text-stone-600 transition-colors p-2">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="modal-body" class="p-6 overflow-y-auto flex-1 text-stone-700 leading-relaxed">
+                <!-- Content injected here -->
+            </div>
+            <div id="modal-footer" class="p-6 bg-stone-50 border-t border-stone-100 flex flex-col sm:flex-row justify-end gap-3">
+                <!-- Buttons injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Feedback Message (Toast) -->
+    <div id="toast" class="fixed bottom-8 right-8 bg-stone-900 text-white px-6 py-3 rounded-lg shadow-2xl transform transition-all duration-300 opacity-0 translate-y-10 z-50 pointer-events-none text-sm font-bold">
+        Changes Saved
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- API CONFIG ---
+        const apiKey = "";
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+
+        // --- DATA STORE ---
+        const initialPhases = [
+            {
+                id: 'phase1',
+                title: 'Phase 1: Foundations',
+                subtitle: 'Mathematical Intuition (Weeks 1-4)',
+                icon: 'fa-square-root-variable',
+                intro: "Top firms don't just test textbook math; they test 'intuition' math. Your goal in this phase is to become a human calculator and probability engine.",
+                skills: { labels: ['Math', 'Stats', 'Coding', 'Finance'], data: [90, 40, 20, 10] },
+                allocation: { labels: ['Probability', 'Mental Math', 'Calculus/LinAlg'], data: [50, 30, 20] },
+                tasks: ["Master Expected Value & Bayes' Theorem", "Complete the 'Green Book'", "Daily drill: Mental Arithmetic", "Review SVD and Taylor Expansions"],
+                resources: [{ title: "A First Course in Probability", author: "Sheldon Ross", type: "Book" }]
+            },
+            {
+                id: 'phase2',
+                title: 'Phase 2: Modeling',
+                subtitle: 'Stats & Data Science (Weeks 5-8)',
+                icon: 'fa-chart-simple',
+                intro: "As a researcher, your job is to extract signal from noise. Focus on understanding the 'why' behind models, from linear regression to GBTs.",
+                skills: { labels: ['Math', 'Stats', 'Coding', 'Finance'], data: [40, 90, 50, 20] },
+                allocation: { labels: ['ML Theory', 'Time Series', 'Linear Models'], data: [40, 30, 30] },
+                tasks: ["Deep dive: Ridge/Lasso", "Explain Random Forest from scratch", "Study ARMA models", "Understand Entropy"],
+                resources: [{ title: "Elements of Statistical Learning", author: "Hastie & Tibshirani", type: "Bible" }]
+            },
+            {
+                id: 'phase3',
+                title: 'Phase 3: Engineering',
+                subtitle: 'Coding & Systems (Weeks 9-10)',
+                icon: 'fa-code',
+                intro: "Firms expect production-level code. Even for research, your Python and C++ must be clean and highly optimized for performance.",
+                skills: { labels: ['Math', 'Stats', 'Coding', 'Finance'], data: [20, 30, 90, 10] },
+                allocation: { labels: ['NumPy/Pandas', 'LeetCode', 'Systems'], data: [40, 40, 20] },
+                tasks: ["Master Vectorized Operations", "Solve LeetCode Medium/Hard", "C++ Memory Management basics"],
+                resources: [{ title: "Effective Python", author: "Brett Slatkin", type: "Book" }]
+            },
+            {
+                id: 'phase4',
+                title: 'Phase 4: Financial Theory',
+                subtitle: 'Econometrics & Microstructure (Weeks 11-12)',
+                icon: 'fa-building-columns',
+                intro: "The final layer. This phase bridges pure math with the reality of markets. You must understand how limit order books work and how to model volatility clusters.",
+                skills: { labels: ['Math', 'Stats', 'Coding', 'Finance'], data: [30, 70, 40, 90] },
+                allocation: { labels: ['Microstructure', 'Volatility/GARCH', 'Asset Pricing'], data: [40, 30, 30] },
+                tasks: [
+                    "Study Limit Order Book dynamics (Adverse Selection)",
+                    "Master Cointegration & Vector Error Correction (VEC)",
+                    "Review Black-Scholes intuition",
+                    "Understand GARCH/ARCH volatility models"
+                ],
+                resources: [{ title: "Market Microstructure Theory", author: "Maureen O'Hara", type: "Book" }]
+            }
+        ];
+
+        let state = {
+            currentView: 'phase1',
+            phases: [...initialPhases],
+            checkedTasks: new Set(),
+            notes: {}, 
+            kelly: { p: 0.6, odds: 1.0 },
+            activeAIPuzzle: null
+        };
+
+        // --- GEMINI HELPER ---
+        async function callGemini(prompt, systemInstruction = "You are a Quant Research Interviewer for firms like Jane Street and HRT. Be concise, rigorous, and professional.") {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error("API failure");
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (err) {
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("Failed after 5 retries.");
+        }
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSession(); // Now loads from localStorage
+            renderNav();
+            renderView(state.currentView);
+        });
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => t.classList.add('opacity-0', 'translate-y-10'), 2000);
+        }
+
+        // --- NAVIGATION & STATE ---
+        function renderNav() {
+            const navContainer = document.getElementById('desktop-nav-list');
+            const mobileContainer = document.getElementById('mobile-nav-list');
+            
+            let html = `<div class="px-2 mb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">Plan</div>`;
+            state.phases.forEach(phase => html += createNavItem(phase.id, phase.title, phase.icon));
+
+            html += `<div class="mt-6 px-2 mb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">Workspace</div>`;
+            html += createNavItem('kelly', 'Kelly Simulator', 'fa-calculator');
+            html += createNavItem('topic-builder', 'Add New Topic', 'fa-plus-circle');
+            html += createNavItem('notes-hub', 'My Notes', 'fa-sticky-note');
+
+            navContainer.innerHTML = html;
+            mobileContainer.innerHTML = html;
+        }
+
+        function createNavItem(id, title, icon) {
+            return `
+                <button onclick="switchView('${id}')" 
+                    class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-stone-600 mb-1 group"
+                    data-id="${id}">
+                    <i class="fa-solid ${icon} w-6 text-center mr-2 text-stone-400 group-hover:text-orange-600"></i>
+                    ${title}
+                </button>
+            `;
+        }
+
+        function switchView(viewId) {
+            state.currentView = viewId;
+            renderView(viewId);
+            updateNavActiveState();
+            closeMobileNav();
+        }
+
+        function updateNavActiveState() {
+            document.querySelectorAll('.nav-item').forEach(el => {
+                if (el.dataset.id === state.currentView) {
+                    el.classList.add('active', 'bg-stone-100', 'text-orange-700');
+                    el.querySelector('i').classList.replace('text-stone-400', 'text-orange-600');
+                } else {
+                    el.classList.remove('active', 'bg-stone-100', 'text-orange-700');
+                    el.querySelector('i').classList.replace('text-orange-600', 'text-stone-400');
+                }
+            });
+        }
+
+        // --- MODAL UTILS ---
+        function openModal(title, body, footerHtml = "") {
+            document.getElementById('modal-title').innerHTML = `✨ ${title}`;
+            document.getElementById('modal-body').innerHTML = body;
+            document.getElementById('modal-footer').innerHTML = footerHtml || `<button onclick="closeModal()" class="w-full sm:w-auto px-6 py-2 bg-stone-800 text-white rounded-lg font-bold">Close</button>`;
+            document.getElementById('ai-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('ai-modal').classList.add('hidden');
+        }
+
+        // --- AI FEATURES ---
+        async function runAIPractice(phaseId) {
+            const phase = state.phases.find(p => p.id === phaseId);
+            openModal("Generating Puzzle...", "<div class='ai-loading text-center p-8'><i class='fa-solid fa-spinner fa-spin text-4xl text-orange-600 mb-4'></i><p>Designing a high-stakes quant question...</p></div>", "");
+
+            try {
+                const prompt = `Generate a single, difficult Quantitative Research interview question (probability, puzzle, coding, or market theory) specifically for a module titled "${phase.title}". Focus on intuition. Do not provide the answer.`;
+                const question = await callGemini(prompt);
+                state.activeAIPuzzle = { question, phaseId };
+
+                const bodyHtml = `
+                    <div class="space-y-4">
+                        <div class="p-4 bg-orange-50 border-l-4 border-orange-500 rounded text-stone-800 font-medium whitespace-pre-wrap">${question}</div>
+                        <textarea id="ai-answer-input" class="w-full h-32 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Draft your logic..."></textarea>
+                    </div>
+                `;
+                const footerHtml = `
+                    <button onclick="closeModal()" class="px-4 py-2 text-stone-500 font-bold">Cancel</button>
+                    <button onclick="evaluateAIAnswer()" class="px-6 py-2 bg-stone-900 text-white rounded-lg font-bold">✨ Evaluate</button>
+                `;
+                openModal(`Practice: ${phase.title}`, bodyHtml, footerHtml);
+            } catch (err) {
+                openModal("Error", "Check your connection or API key.");
+            }
+        }
+
+        async function evaluateAIAnswer() {
+            const answer = document.getElementById('ai-answer-input').value;
+            if (!answer) return;
+
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `<div class='ai-loading text-center p-8'><i class='fa-solid fa-brain fa-pulse text-4xl text-orange-600 mb-4'></i><p>Evaluating logic...</p></div>`;
+
+            try {
+                const prompt = `The user was asked: "${state.activeAIPuzzle.question}"\nUser answer: "${answer}"\nEvaluate logic, grade as PASS/BORDERLINE/FAIL. Be rigorous.`;
+                const feedback = await callGemini(prompt);
+                modalBody.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="text-xs uppercase font-bold text-stone-400">Feedback</div>
+                        <div class="p-4 bg-stone-50 rounded border border-stone-200 text-stone-800 leading-relaxed whitespace-pre-wrap">${feedback}</div>
+                    </div>
+                `;
+                document.getElementById('modal-footer').innerHTML = `<button onclick="closeModal()" class="w-full px-6 py-2 bg-stone-800 text-white rounded-lg font-bold">Finish</button>`;
+            } catch (err) {
+                modalBody.innerHTML = "Error evaluating.";
+            }
+        }
+
+        async function refineNotesAI(phaseId) {
+            const noteArea = document.getElementById(`note-${phaseId}`);
+            const rawText = noteArea.value;
+            if (rawText.length < 10) return showToast("More text needed");
+
+            showToast("✨ Refining notes...");
+            try {
+                const prompt = `Refine these quant research notes into a structured study summary with formulas: "${rawText}"`;
+                const refined = await callGemini(prompt, "You are a professional editor for quant traders.");
+                noteArea.value = refined;
+                state.notes[phaseId] = refined;
+                saveSession();
+                showToast("Refined!");
+            } catch (err) {
+                showToast("Refinement failed.");
+            }
+        }
+
+        async function generateTopicAI() {
+            const titleInput = document.getElementById('new-title');
+            const title = titleInput.value.trim();
+            if (!title) return showToast("Enter title");
+
+            showToast("✨ AI Drafting...");
+            try {
+                const prompt = `Generate a JSON curriculum for "${title}" with: subtitle, intro, tasks (array of 5), icon, and skillData (array of 4 numbers 0-100).`;
+                const responseText = await callGemini(prompt, "Respond ONLY with raw JSON.");
+                const data = JSON.parse(responseText.replace(/```json|```/g, ""));
+                
+                const newId = 'custom-' + Date.now();
+                state.phases.push({
+                    id: newId, title: title, subtitle: data.subtitle, icon: data.icon, intro: data.intro,
+                    skills: { labels: ['Math', 'Stats', 'Coding', 'Finance'], data: data.skillData },
+                    allocation: { labels: ['Theory', 'Practice', 'Review'], data: [40, 40, 20] },
+                    tasks: data.tasks, resources: []
+                });
+                saveSession();
+                renderNav();
+                switchView(newId);
+                showToast("AI Topic Created!");
+            } catch (err) {
+                showToast("Generation failed.");
+            }
+        }
+
+        // --- RENDERING ---
+        function renderView(viewId) {
+            const container = document.getElementById('main-content');
+            if (viewId === 'kelly') renderKellyTool(container);
+            else if (viewId === 'topic-builder') renderTopicBuilder(container);
+            else if (viewId === 'notes-hub') renderNotesHub(container);
+            else {
+                const phaseData = state.phases.find(p => p.id === viewId);
+                renderPhase(container, phaseData);
+            }
+        }
+
+        function renderPhase(container, data) {
+            container.innerHTML = `
+                <div class="max-w-5xl mx-auto animate-fade-in">
+                    <div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                        <div>
+                            <div class="flex items-center text-orange-600 mb-2">
+                                <i class="fa-solid ${data.icon} mr-2"></i>
+                                <span class="font-bold uppercase tracking-wide text-xs">Curriculum Module</span>
+                            </div>
+                            <h2 class="text-3xl font-bold text-stone-900 mb-2">${data.title}</h2>
+                            <h3 class="text-xl text-stone-500">${data.subtitle}</h3>
+                        </div>
+                        <button onclick="runAIPractice('${data.id}')" class="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition-all shadow-md active:scale-95">
+                            ✨ Practice Puzzle
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                        <div class="lg:col-span-2 space-y-8">
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                                <p class="text-stone-700 leading-relaxed text-lg italic">Overview</p>
+                                <p class="text-stone-600 leading-relaxed mt-2">${data.intro}</p>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                                <h4 class="text-lg font-bold text-stone-800 mb-4 border-b border-stone-100 pb-2">Checkpoint</h4>
+                                <ul class="space-y-3 mb-6">
+                                    ${data.tasks.map((task, idx) => `
+                                        <li class="flex items-start">
+                                            <label class="flex items-center cursor-pointer group">
+                                                <input type="checkbox" class="task-checkbox h-5 w-5 text-orange-600 border-stone-300 rounded focus:ring-orange-500 mt-0.5"
+                                                    onchange="toggleTask('${data.id}', ${idx})" ${state.checkedTasks.has(`${data.id}-${idx}`) ? 'checked' : ''}>
+                                                <span class="ml-3 text-stone-600 text-sm transition-colors">${task}</span>
+                                            </label>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-task-input" class="flex-1 text-sm p-3 border border-stone-200 rounded-lg bg-stone-50 focus:ring-1 focus:ring-orange-500 outline-none custom-input" placeholder="Add custom checkpoint...">
+                                    <button onclick="addCheckpoint('${data.id}')" class="bg-stone-800 text-white px-5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-lg font-bold text-stone-800">Research Notes</h4>
+                                    <button onclick="refineNotesAI('${data.id}')" class="text-xs bg-orange-50 text-orange-700 font-bold px-3 py-1 rounded-full border border-orange-100">✨ AI Refine</button>
+                                </div>
+                                <textarea id="note-${data.id}" oninput="saveNote('${data.id}', this.value)" class="w-full h-48 p-4 border border-stone-200 rounded-lg bg-stone-50 text-stone-800 focus:ring-2 focus:ring-orange-100 focus:border-orange-500 transition-all resize-none text-sm leading-relaxed" placeholder="Summarize your findings...">${state.notes[data.id] || ""}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="space-y-8">
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200"><h4 class="text-xs font-bold text-stone-400 mb-4 uppercase tracking-widest text-center">Skill Mapping</h4><div class="chart-wrapper-radar"><canvas id="radarChart"></canvas></div></div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200"><h4 class="text-xs font-bold text-stone-400 mb-4 uppercase tracking-widest text-center">Time Split</h4><div class="chart-wrapper-radar" style="height: 250px;"><canvas id="donutChart"></canvas></div></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            initPhaseCharts(data);
+        }
+
+        function renderTopicBuilder(container) {
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto animate-fade-in">
+                    <div class="mb-8"><h2 class="text-3xl font-bold text-stone-900 mb-2">Topic Builder</h2><p class="text-stone-600">Scale your roadmap dynamically with manual or AI-generated tracks.</p></div>
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-stone-200 space-y-6">
+                        <div><label class="block text-sm font-bold text-stone-700 mb-2">Topic Title</label><div class="flex gap-2"><input type="text" id="new-title" class="custom-input flex-1 p-3 border border-stone-300 rounded-lg bg-stone-50" placeholder="e.g. Monte Carlo Methods"><button onclick="generateTopicAI()" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold">✨ AI Draft</button></div></div>
+                        <div><label class="block text-sm font-bold text-stone-700 mb-2">Icon</label><select id="new-icon" class="custom-input w-full p-3 border border-stone-300 rounded-lg bg-stone-50"><option value="fa-book">Book</option><option value="fa-microchip">Tech</option><option value="fa-flask">Science</option><option value="fa-building-columns">Finance</option><option value="fa-brain">Theory</option></select></div>
+                        <div><label class="block text-sm font-bold text-stone-700 mb-2">Goal Statement</label><textarea id="new-intro" class="custom-input w-full p-3 border border-stone-300 rounded-lg bg-stone-50 h-24" placeholder="Briefly describe the objective..."></textarea></div>
+                        <button onclick="addCustomTopic()" class="w-full bg-stone-900 text-white py-4 rounded-lg font-bold shadow-lg">Manually Add Topic</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNotesHub(container) {
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto animate-fade-in">
+                    <div class="mb-8 border-b border-stone-200 pb-4"><h2 class="text-3xl font-bold text-stone-900 mb-2">Research Library</h2><p class="text-stone-600">Your curated workspace of findings and strategy.</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${state.phases.map(p => `
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                                <h3 class="font-bold text-stone-800 mb-2 flex items-center"><i class="fa-solid ${p.icon} mr-2 text-orange-600"></i>${p.title}</h3>
+                                <div class="text-sm text-stone-500 h-20 overflow-hidden line-clamp-3 italic">${state.notes[p.id] || 'No documentation yet.'}</div>
+                                <button onclick="switchView('${p.id}')" class="mt-4 text-orange-600 text-xs font-bold uppercase tracking-widest hover:underline">View Notes &rarr;</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderKellyTool(container) {
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto animate-fade-in">
+                    <div class="mb-8"><h2 class="text-3xl font-bold text-stone-900 mb-2">Kelly Strategy Simulator</h2><p class="text-stone-600">Practice risk management and bet sizing logic.</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-white p-6 rounded-xl border border-stone-200 h-fit">
+                            <div class="mb-5"><label class="block text-xs font-bold text-stone-500 uppercase mb-2">Win Prob (p): <span id="p-val">0.6</span></label><input type="range" min="0" max="1" step="0.01" value="0.6" class="w-full accent-orange-600" oninput="updateKellyVal('p', this.value)"></div>
+                            <div class="mb-5"><label class="block text-xs font-bold text-stone-500 uppercase mb-2">Odds (b): <span id="b-val">1.0</span></label><input type="range" min="0.1" max="5" step="0.1" value="1.0" class="w-full accent-orange-600" oninput="updateKellyVal('b', this.value)"></div>
+                            <div class="p-4 bg-orange-50 rounded border border-orange-100 text-center"><div class="text-xs text-orange-800 uppercase font-bold">Optimal Bet</div><div id="kelly-f" class="text-4xl font-bold text-orange-600">20.0%</div></div>
+                        </div>
+                        <div class="md:col-span-2 bg-white p-6 rounded-xl border border-stone-200"><h3 class="font-bold text-stone-800 mb-4 text-sm uppercase text-center">Geometric Growth Curve</h3><div class="chart-wrapper-line"><canvas id="kellyChart"></canvas></div></div>
+                    </div>
+                </div>
+            `;
+            setTimeout(drawKellyChart, 100);
+        }
+
+        // --- PERSISTENCE ---
+        function saveSession() {
+            const serializable = { phases: state.phases, checkedTasks: Array.from(state.checkedTasks), notes: state.notes };
+            localStorage.setItem('alpha_quant_state_v1', JSON.stringify(serializable));
+        }
+
+        function loadSession() {
+            const saved = localStorage.getItem('alpha_quant_state_v1');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.phases = parsed.phases;
+                state.checkedTasks = new Set(parsed.checkedTasks);
+                state.notes = parsed.notes || {};
+            }
+            calcGlobalProgress();
+        }
+
+        // --- ACTIONS ---
+        function saveNote(id, val) { state.notes[id] = val; saveSession(); }
+        
+        function addCheckpoint(phaseId) {
+            const input = document.getElementById('new-task-input');
+            const val = input.value.trim();
+            if (!val) return;
+            const p = state.phases.find(p => p.id === phaseId);
+            if (p) {
+                p.tasks.push(val); saveSession(); renderView(phaseId); calcGlobalProgress(); showToast("Updated Checkpoints");
+            }
+        }
+
+        function addCustomTopic() {
+            const title = document.getElementById('new-title').value;
+            if (!title) return;
+            state.phases.push({
+                id: 'custom-'+Date.now(), title: title, subtitle: "Custom Module", icon: document.getElementById('new-icon').value,
+                intro: document.getElementById('new-intro').value || "No intro provided.",
+                skills: { labels: ['Math', 'Stats', 'Coding', 'Finance'], data: [50, 50, 50, 50] },
+                allocation: { labels: ['Theory', 'Practice', 'Review'], data: [40, 40, 20] },
+                tasks: ["First deep dive"], resources: []
+            });
+            saveSession(); renderNav(); switchView(state.phases[state.phases.length-1].id);
+        }
+
+        function toggleTask(phaseId, idx) {
+            const key = `${phaseId}-${idx}`;
+            if (state.checkedTasks.has(key)) state.checkedTasks.delete(key);
+            else state.checkedTasks.add(key);
+            saveSession(); calcGlobalProgress();
+        }
+
+        function calcGlobalProgress() {
+            let total = 0; state.phases.forEach(p => total += p.tasks.length);
+            const percent = total > 0 ? Math.round((state.checkedTasks.size / total) * 100) : 0;
+            const bar = document.getElementById('global-progress');
+            if (bar) bar.style.width = `${percent}%`;
+            const txt = document.getElementById('progress-text');
+            if (txt) txt.innerText = percent;
+        }
+
+        function updateKellyVal(k, v) {
+            if (k === 'p') state.kelly.p = parseFloat(v); else state.kelly.odds = parseFloat(v);
+            document.getElementById(k+'-val').innerText = v; drawKellyChart();
+        }
+
+        // --- CHARTS & UI ---
+        let activeCharts = []; let kellyChart = null;
+        function initPhaseCharts(data) {
+            activeCharts.forEach(c => c.destroy()); activeCharts = [];
+            const rCtx = document.getElementById('radarChart')?.getContext('2d');
+            if (rCtx) activeCharts.push(new Chart(rCtx, { type: 'radar', data: { labels: data.skills.labels, datasets: [{ data: data.skills.data, backgroundColor: 'rgba(234, 88, 12, 0.2)', borderColor: '#ea580c', pointRadius: 0 }] }, options: { maintainAspectRatio: false, scales: { r: { display: true, ticks: { display: false }, min: 0, max: 100 } }, plugins: { legend: { display: false } } } }));
+            const dCtx = document.getElementById('donutChart')?.getContext('2d');
+            if (dCtx) activeCharts.push(new Chart(dCtx, { type: 'doughnut', data: { labels: data.allocation.labels, datasets: [{ data: data.allocation.data, backgroundColor: ['#fb923c', '#fdba74', '#fed7aa', '#ffedd5'], borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } }));
+        }
+
+        function drawKellyChart() {
+            const ctx = document.getElementById('kellyChart'); if (!ctx) return;
+            const p = state.kelly.p; const b = state.kelly.odds; const q = 1 - p; const fStar = (p * b - q) / b;
+            document.getElementById('kelly-f').innerText = (Math.max(0, fStar) * 100).toFixed(1) + "%";
+            const labels = []; const data = [];
+            for (let f = 0; f < 0.99; f += 0.02) { labels.push(f.toFixed(2)); data.push(p * Math.log(1 + b * f) + q * Math.log(1 - f)); }
+            if (kellyChart) kellyChart.destroy();
+            kellyChart = new Chart(ctx.getContext('2d'), { type: 'line', data: { labels, datasets: [{ label: 'Growth', data, borderColor: '#ea580c', backgroundColor: 'rgba(234, 88, 12, 0.05)', fill: true, pointRadius: 0, tension: 0.3 }] }, options: { maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f5f5f4' } } }, plugins: { legend: { display: false } } } });
+        }
+
+        function toggleMobileNav() {
+            const nav = document.getElementById('mobile-nav');
+            const content = document.getElementById('mobile-nav-content');
+            if (nav.classList.contains('hidden')) {
+                nav.classList.remove('hidden');
+                setTimeout(() => content.classList.remove('-translate-x-full'), 10);
+            } else {
+                content.classList.add('-translate-x-full');
+                setTimeout(() => nav.classList.add('hidden'), 300);
+            }
+        }
+
+        function closeMobileNav() { if (!document.getElementById('mobile-nav').classList.contains('hidden')) toggleMobileNav(); }
+        document.getElementById('mobile-menu-btn').addEventListener('click', toggleMobileNav);
+    </script>
+</body>
+</html>
